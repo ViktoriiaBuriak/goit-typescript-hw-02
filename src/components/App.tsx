@@ -1,5 +1,5 @@
 import "./App.css";
-import { useEffect, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import SearchBar from "./SearchBar/SearchBar";
 import ImageGallery from "./ImageGallery/ImageGallery";
 import ErrorMessage from "./ErrorMessage/ErrorMessage";
@@ -7,30 +7,40 @@ import ImageModal from "./ImageModal/ImageModal";
 import LoadMoreBtn from "./LoadMoreBtn/LoadMoreBtn";
 import Loader from "./Loader/Loader";
 import { requestImagesByQuery } from "./services/api";
+import { ImageType } from "./types";
 
-function App() {
-  const [images, setImages] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [page, setPage] = useState(1);
-  const [query, setQuery] = useState("");
-  const [showBtn, setShowBtn] = useState(false);
+interface ImageResponse {
+  results: ImageType[];
+  total_pages: number;
+}
+
+const App: FC = () => {
+  const [images, setImages] = useState<ImageType[] | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<boolean>(false);
+  const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
+  const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [query, setQuery] = useState<string>("");
+  const [showBtn, setShowBtn] = useState<boolean>(false);
 
   useEffect(() => {
     if (!query) return;
 
-    async function fetchImagesByQuery() {
+    async function fetchImagesByQuery(): Promise<void> {
       try {
         setError(false);
         setLoading(true);
-        const { results, total_pages } = await requestImagesByQuery(
-          query,
-          page
-        );
+        const { results, total_pages }: ImageResponse =
+          await requestImagesByQuery(query, page);
         if (page > 1) {
-          setImages((prevImages) => [...prevImages, ...results]);
+          setImages((prevImages: ImageType[] | null) => {
+            if (prevImages === null) {
+              return results;
+            } else {
+              return [...prevImages, ...results];
+            }
+          });
         } else {
           setImages(results);
         }
@@ -45,20 +55,20 @@ function App() {
     fetchImagesByQuery();
   }, [query, page]);
 
-  const openModal = () => {
+  const openModal = (): void => {
     setModalIsOpen(true);
   };
 
-  const closeModal = () => {
+  const closeModal = (): void => {
     setModalIsOpen(false);
   };
 
-  const handleImageClick = (image) => {
+  const handleImageClick = (image: ImageType | null): void => {
     setSelectedImage(image);
     openModal();
   };
 
-  const handleSearch = (inputValue) => {
+  const handleSearch = (inputValue: string): void => {
     if (inputValue !== query) {
       setQuery(inputValue);
       setImages([]);
@@ -66,7 +76,7 @@ function App() {
     }
   };
 
-  const loadMoreImages = () => {
+  const loadMoreImages = (): void => {
     setPage((prevPage) => prevPage + 1);
   };
 
@@ -85,9 +95,9 @@ function App() {
           image={selectedImage}
         />
       )}
-      {showBtn && <LoadMoreBtn loadMore={loadMoreImages} />}
+      {showBtn && !error && <LoadMoreBtn loadMore={loadMoreImages} />}
     </>
   );
-}
+};
 
 export default App;
